@@ -1,0 +1,261 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BaseTrack — Never miss a reward on Base</title>
+  <meta name="description" content="BaseTrack — track Base quests, airdrops and rewards. Built for quick phone deployment." />  <!-- Tailwind CDN for quick styling (phone-friendly) -->  <script src="https://cdn.tailwindcss.com"></script>  <!-- Ethers (for MetaMask / wallet connect basics) -->  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>  <style>
+    /* small extra styles */
+    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
+    .pulse-icon { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%{ transform: scale(1);} 50%{ transform: scale(1.06);} 100%{ transform: scale(1);} }
+  </style></head>
+<body class="bg-[#0b1220] text-white min-h-screen font-sans">
+  <div class="max-w-3xl mx-auto p-4">
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0052FF] to-[#00D4FF] flex items-center justify-center shadow-2xl">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M3 12h18"/></svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-semibold">BaseTrack</h1>
+          <p class="text-xs text-slate-300">Never miss a reward, drop, or quest on Base.</p>
+        </div>
+      </div><div class="flex items-center gap-3">
+    <button id="connectBtn" class="px-3 py-2 rounded-lg bg-white text-black text-sm">Connect Wallet</button>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="mb-6 glass p-4 rounded-2xl shadow-xl">
+  <div class="flex items-start gap-4">
+    <div class="flex-1">
+      <h2 class="text-2xl font-bold mb-1">Track active quests & airdrops on Base</h2>
+      <p class="text-slate-300 mb-3">See which rewards are live, whether you’re eligible, and get quick links to claim.</p>
+
+      <div class="flex gap-2 flex-wrap">
+        <button id="viewFeed" class="px-3 py-2 bg-[#0052FF] rounded-lg text-sm">View Active Quests</button>
+        <button id="joinWaitlist" class="px-3 py-2 border border-slate-700 rounded-lg text-sm">Join Waitlist</button>
+      </div>
+    </div>
+    <div class="w-28 text-center">
+      <div class="bg-white/5 p-3 rounded-xl">
+        <div class="text-xs text-slate-300">Tracked</div>
+        <div id="trackedCount" class="text-2xl font-bold mt-1">0</div>
+        <div class="text-xs text-slate-300">rewards</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Filters -->
+<div class="mb-4 flex gap-2 items-center">
+  <input id="search" type="search" placeholder="Search quests, projects, tokens..." class="flex-1 p-2 rounded-lg bg-white/5 placeholder:text-slate-400" />
+  <select id="sourceFilter" class="p-2 rounded-lg bg-white/5">
+    <option value="all">All sources</option>
+    <option value="galxe">Galxe</option>
+    <option value="layer3">Layer3</option>
+    <option value="onchain">Onchain Summer</option>
+  </select>
+</div>
+
+<!-- Feed -->
+<main id="feed" class="space-y-3 mb-8">
+  <!-- injected quest cards go here -->
+</main>
+
+<!-- Footer actions -->
+<footer class="py-4 border-t border-white/5 text-slate-300 text-sm">
+  <div class="flex flex-col sm:flex-row sm:justify-between gap-2">
+    <div>Made for Base · Mobile-first · Privacy-first</div>
+    <div class="flex gap-3">
+      <button id="refreshBtn" class="px-3 py-1 bg-white/5 rounded">Refresh</button>
+      <button id="exportBtn" class="px-3 py-1 bg-white/5 rounded">Export CSV</button>
+    </div>
+  </div>
+</footer>
+
+  </div>  <!-- Email modal (simple) -->  <div id="emailModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="bg-[#071024] rounded-xl p-4 w-full max-w-md">
+      <h3 class="font-semibold mb-2">Join BaseTrack waitlist</h3>
+      <p class="text-slate-400 text-sm mb-3">Enter your email to get updates when new quests are tracked.</p>
+      <input id="waitEmail" type="email" placeholder="you@domain.com" class="w-full p-2 rounded mb-3 bg-white/5" />
+      <div class="flex gap-2 justify-end">
+        <button id="closeEmail" class="px-3 py-2 rounded bg-white/5">Cancel</button>
+        <button id="saveEmail" class="px-3 py-2 rounded bg-[#0052FF]">Join</button>
+      </div>
+    </div>
+  </div>  <script>
+    // ----- Quick client-side "BaseTrack" prototype -----
+    // NOTE: This is a mobile-first, single-file prototype. To plug real APIs (Galxe/Layer3), replace fetchFakeQuests() with real API calls.
+
+    const sampleQuests = [
+      { id: 'q1', title: 'Galxe — Base Launch Quest', source: 'galxe', reward: 'NFT + $5', ends: '2025-11-05', url: '#', claimed: false },
+      { id: 'q2', title: 'Layer3 — Base Builders', source: 'layer3', reward: 'Token airdrop', ends: '2025-10-30', url: '#', claimed: false },
+      { id: 'q3', title: 'Onchain Summer — Base Trivia', source: 'onchain', reward: 'Mystery NFT', ends: '2025-12-01', url: '#', claimed: true },
+    ];
+
+    // Local state
+    let quests = [];
+    let provider = null;
+    let userAddress = null;
+
+    // Elements
+    const feed = document.getElementById('feed');
+    const trackedCount = document.getElementById('trackedCount');
+    const connectBtn = document.getElementById('connectBtn');
+    const viewFeed = document.getElementById('viewFeed');
+    const joinWaitlist = document.getElementById('joinWaitlist');
+    const emailModal = document.getElementById('emailModal');
+    const closeEmail = document.getElementById('closeEmail');
+    const saveEmail = document.getElementById('saveEmail');
+    const waitEmail = document.getElementById('waitEmail');
+    const search = document.getElementById('search');
+    const sourceFilter = document.getElementById('sourceFilter');
+
+    // Basic helpers
+    function timeLeft(endDate) {
+      const now = new Date();
+      const end = new Date(endDate);
+      const diff = end - now;
+      if (diff <= 0) return 'ended';
+      const days = Math.floor(diff / (1000*60*60*24));
+      return days + 'd left';
+    }
+
+    function renderQuests(list) {
+      feed.innerHTML = '';
+      list.forEach(q => {
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-xl bg-white/3 flex items-start justify-between';
+        card.innerHTML = `
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <div class="w-10 h-10 rounded bg-white/5 flex items-center justify-center text-xs">${q.source}</div>
+              <div>
+                <div class="font-semibold">${q.title}</div>
+                <div class="text-xs text-slate-300">Reward: ${q.reward} · ${timeLeft(q.ends)}</div>
+              </div>
+            </div>
+          </div>
+          <div class="ml-3 text-right flex flex-col gap-2 items-end">
+            <a href="${q.url}" target="_blank" class="text-xs px-3 py-1 border rounded">Open</a>
+            <button class="text-xs px-3 py-1 rounded ${q.claimed ? 'opacity-60' : 'bg-[#00D4FF] text-black'}" data-id="${q.id}">${q.claimed ? 'Claimed' : 'Check'}</button>
+          </div>
+        `;
+        feed.appendChild(card);
+      });
+      trackedCount.textContent = list.length;
+
+      // attach check buttons
+      document.querySelectorAll('[data-id]').forEach(btn => {
+        btn.onclick = async (e) => {
+          const id = e.currentTarget.dataset.id;
+          const quest = quests.find(x => x.id === id);
+          if (!quest) return;
+          // If connected, show eligibility
+          if (userAddress) {
+            const eligible = mockEligibility(userAddress, quest.id);
+            alert(eligible ? `You are likely eligible for ${quest.title}` : `You are not eligible for ${quest.title}`);
+          } else {
+            alert('Connect your wallet to check eligibility (MetaMask on mobile browsers or WalletConnect).');
+          }
+        }
+      });
+    }
+
+    function mockEligibility(address, questId) {
+      // quick mock: check last hex char of address
+      try {
+        const last = address.slice(-1);
+        const n = parseInt(last, 16);
+        return (n % 2) === (questId.length % 2);
+      } catch(e) { return false; }
+    }
+
+    // Fake fetch to simulate API calls (replace this with real API integration)
+    async function fetchFakeQuests() {
+      // Simulate network delay
+      await new Promise(r => setTimeout(r, 300));
+      // In production: call Galxe / Layer3 endpoints and normalize results to this shape
+      quests = sampleQuests;
+      applyFiltersAndRender();
+    }
+
+    function applyFiltersAndRender() {
+      const q = search.value.toLowerCase();
+      const src = sourceFilter.value;
+      let filtered = quests.filter(x => (
+        (src === 'all' || x.source === src) &&
+        (x.title.toLowerCase().includes(q) || x.reward.toLowerCase().includes(q))
+      ));
+      renderQuests(filtered);
+    }
+
+    // Wallet connect (MetaMask basic). On mobile, users can use MetaMask in-app browser or WalletConnect (future).
+    async function connectWallet() {
+      if (window.ethereum) {
+        try {
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          await provider.send('eth_requestAccounts', []);
+          const signer = provider.getSigner();
+          userAddress = await signer.getAddress();
+          connectBtn.textContent = userAddress.slice(0,6) + '...' + userAddress.slice(-4);
+          connectBtn.classList.add('bg-white/5');
+          // update UI (mark some quests as eligible for demo)
+          applyFiltersAndRender();
+        } catch (e) {
+          alert('Connection failed: ' + e.message);
+        }
+      } else {
+        alert('MetaMask not detected. On mobile, open this in MetaMask browser or use WalletConnect (coming soon).');
+      }
+    }
+
+    // Export CSV simple function
+    function exportCSV() {
+      const rows = [['id','title','source','reward','ends','claimed']];
+      quests.forEach(q => rows.push([q.id, q.title, q.source, q.reward, q.ends, q.claimed]));
+      const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+      const url = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'basetrack-quests.csv';
+      a.click();
+    }
+
+    // Waitlist (localStorage simple)
+    function saveWaitlistEmail(email) {
+      if (!email || !email.includes('@')) { alert('Enter a valid email'); return; }
+      const list = JSON.parse(localStorage.getItem('bt_waitlist') || '[]');
+      if (!list.includes(email)) list.push(email);
+      localStorage.setItem('bt_waitlist', JSON.stringify(list));
+      alert('Thanks — you are on the waitlist!');
+      emailModal.classList.add('hidden');
+    }
+
+    // --- event wiring ---
+    connectBtn.onclick = connectWallet;
+    viewFeed.onclick = () => { window.scrollTo({ top: document.body.scrollHeight/4, behavior: 'smooth' }); };
+    joinWaitlist.onclick = () => { emailModal.classList.remove('hidden'); };
+    closeEmail.onclick = () => { emailModal.classList.add('hidden'); };
+    saveEmail.onclick = () => { saveWaitlistEmail(waitEmail.value.trim()); };
+    refreshBtn.onclick = fetchFakeQuests;
+    exportBtn.onclick = exportCSV;
+    search.oninput = applyFiltersAndRender;
+    sourceFilter.onchange = applyFiltersAndRender;
+
+    // load
+    (async function(){
+      await fetchFakeQuests();
+    })();
+
+    // --- Notes for next steps (for developer):
+    // 1) Replace fetchFakeQuests() with real API calls to Galxe/Layer3.
+    // 2) Normalize results to {id, title, source, reward, ends, url, claimed} shape.
+    // 3) Add server-side cron (or on-demand) to update the feed and send push notifications.
+    // 4) Integrate WalletConnect for mobile wallets where window.ethereum is not available.
+  </script></body>
+</html>
