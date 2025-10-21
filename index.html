@@ -3,406 +3,427 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BaseTrack AI - Your Onchain Assistant</title>
+    <title>BaseTrack - Create Tokens on Base</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        base: {
-                            900: '#0f172a',
-                            800: '#1e293b',
-                            700: '#334155',
-                            600: '#475569',
-                            500: '#64748b',
-                            400: '#94a3b8',
-                            300: '#cbd5e1',
-                            200: '#e2e8f0',
-                            100: '#f8fafc'
-                        },
-                        primary: {
-                            500: '#00f5a8',
-                            600: '#00d992'
-                        }
+                        'base-blue': '#0052FF',
                     }
                 }
             }
         }
     </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #f8fafc;
-            min-height: 100vh;
-        }
-        .message-bubble {
-            animation: fadeIn 0.3s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .typing-indicator {
-            display: inline-block;
-            width: 4px;
-            height: 4px;
-            background-color: #00f5a8;
-            border-radius: 50%;
-            margin: 0 2px;
-            animation: typing 1.4s infinite ease-in-out;
-        }
-        .typing-indicator:nth-child(1) { animation-delay: 0s; }
-        .typing-indicator:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-        .connect-button {
-            background: linear-gradient(135deg, #00f5a8 0%, #00d992 100%);
+        .token-card {
             transition: all 0.3s ease;
         }
-        .connect-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 245, 168, 0.3);
+        .token-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
-        .quest-card {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            transition: all 0.3s ease;
+        .chart-container {
+            height: 300px;
         }
-        .quest-card:hover {
-            transform: translateY(-2px);
-            border-color: rgba(0, 245, 168, 0.3);
+        .gradient-bg {
+            background: linear-gradient(135deg, #0052FF 0%, #0033A0 100%);
         }
     </style>
 </head>
-<body class="min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <!-- Header -->
-        <header class="flex items-center justify-between mb-8">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-robot text-base-900 text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold">BaseTrack AI</h1>
-                    <p class="text-base-400 text-sm">Your onchain assistant for Base ecosystem</p>
-                </div>
-            </div>
-            <button id="connectWalletBtn" class="connect-button px-6 py-2 rounded-lg font-semibold text-base-900 hover:shadow-lg transition-all duration-300">
-                <i class="fas fa-wallet mr-2"></i>Connect Wallet
-            </button>
-        </header>
-
-        <!-- Chat Interface -->
-        <div class="bg-base-800 rounded-2xl p-6 mb-6 h-96 overflow-y-auto" id="chatContainer">
-            <!-- Welcome Message -->
-            <div class="message-bubble mb-4">
-                <div class="flex items-start space-x-3">
-                    <div class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-robot text-base-900 text-sm"></i>
+<body class="bg-white min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-white rounded-md flex items-center justify-center">
+                        <span class="text-base-blue font-bold text-xl">B</span>
                     </div>
-                    <div class="quest-card p-4 rounded-xl">
-                        <p class="text-base-100">Hello! I'm BaseTrack AI, your onchain assistant for the Base ecosystem. 💡</p>
-                        <p class="text-base-300 mt-2">I can help you with:</p>
-                        <ul class="text-base-300 mt-2 space-y-1 text-sm">
-                            <li>• Discover new quests and airdrops</li>
-                            <li>• Check wallet eligibility</li>
-                            <li>• Explain Base projects and tokens</li>
-                            <li>• Track trending opportunities</li>
-                        </ul>
-                        <p class="text-base-300 mt-3">Try asking: "Show me 3 new quests on Base" or "Check if my wallet can claim anything"</p>
+                    <h1 class="text-2xl font-bold">BaseTrack</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <nav class="hidden md:flex space-x-6">
+                        <button id="create-tab" class="px-4 py-2 rounded-md bg-blue-700 transition">Create Token</button>
+                        <button id="explore-tab" class="px-4 py-2 rounded-md hover:bg-blue-800 transition">Explore Tokens</button>
+                        <button id="analytics-tab" class="px-4 py-2 rounded-md hover:bg-blue-800 transition">Analytics</button>
+                    </nav>
+                    <button id="connect-wallet" class="px-4 py-2 bg-white text-base-blue rounded-md hover:bg-gray-100 transition font-semibold">
+                        Connect Wallet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Create Token Section -->
+        <div id="create-section" class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-6 text-base-blue">Create Your Token on Base</h2>
+                
+                <div id="wallet-info" class="mb-6 p-4 bg-blue-50 rounded-lg hidden">
+                    <p class="text-sm text-blue-800">
+                        Connected as: <span id="wallet-address" class="font-mono"></span>
+                    </p>
+                </div>
+                
+                <div id="connect-prompt" class="mb-6 p-4 bg-yellow-50 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                        Please connect your wallet to create a token.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Token Name *</label>
+                        <input
+                            type="text"
+                            id="token-name"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-base-blue"
+                            placeholder="Enter token name"
+                        />
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Token Symbol *</label>
+                        <input
+                            type="text"
+                            id="token-symbol"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-base-blue"
+                            placeholder="Enter token symbol (e.g., BASE)"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Total Supply *</label>
+                        <input
+                            type="number"
+                            id="total-supply"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-base-blue"
+                            placeholder="Enter total supply"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                        <select
+                            id="payment-method"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-base-blue"
+                        >
+                            <option value="ETH">ETH</option>
+                            <option value="USDC">USDC</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <button
+                        id="analyze-btn"
+                        disabled
+                        class="px-4 py-2 bg-base-blue text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition mr-4"
+                    >
+                        AI Safety Analysis
+                    </button>
+                    
+                    <div id="ai-analysis" class="mt-4 p-4 rounded-md hidden">
+                        <div class="flex items-start">
+                            <i id="ai-icon" class="fas fa-check-circle w-5 h-5 text-green-500 mt-0.5 mr-2"></i>
+                            <div>
+                                <h3 id="ai-title" class="font-semibold text-green-800"></h3>
+                                <p id="ai-message" class="mt-1 text-sm text-gray-700"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button
+                        id="create-token-btn"
+                        disabled
+                        class="px-6 py-3 bg-base-blue text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        Create Token
+                    </button>
+                </div>
+            </div>
+            
+            <div id="token-success" class="bg-white rounded-xl shadow-lg p-6 hidden">
+                <h3 class="text-xl font-bold mb-4 text-base-blue">Token Created Successfully!</h3>
+                <div id="token-details" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Token details will be populated here -->
                 </div>
             </div>
         </div>
 
-        <!-- Input Area -->
-        <div class="flex space-x-4">
-            <input 
-                type="text" 
-                id="userInput" 
-                placeholder="Ask about Base quests, airdrops, or projects..." 
-                class="flex-1 bg-base-700 border border-base-600 rounded-xl px-4 py-3 text-base-100 placeholder-base-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                disabled
-            >
-            <button 
-                id="sendBtn" 
-                class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-3 rounded-xl font-semibold text-base-900 hover:shadow-lg transition-all duration-300 disabled:opacity-50"
-                disabled
-            >
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-
-        <!-- Sample Queries -->
-        <div class="mt-6">
-            <p class="text-base-400 text-sm mb-3">Try these examples:</p>
-            <div class="flex flex-wrap gap-2">
-                <button class="sample-query bg-base-700 hover:bg-base-600 px-3 py-2 rounded-lg text-sm text-base-200 transition-colors">Show me 3 new quests</button>
-                <button class="sample-query bg-base-700 hover:bg-base-600 px-3 py-2 rounded-lg text-sm text-base-200 transition-colors">Check wallet eligibility</button>
-                <button class="sample-query bg-base-700 hover:bg-base-600 px-3 py-2 rounded-lg text-sm text-base-200 transition-colors">Explain Onchain Summer</button>
-                <button class="sample-query bg-base-700 hover:bg-base-600 px-3 py-2 rounded-lg text-sm text-base-200 transition-colors">Trending Base projects</button>
+        <!-- Explore Tokens Section -->
+        <div id="explore-section" class="max-w-4xl mx-auto hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-base-blue">Explore Popular Tokens</h2>
+                
+                <div id="token-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Token cards will be populated here -->
+                </div>
             </div>
         </div>
-    </div>
 
+        <!-- Analytics Section -->
+        <div id="analytics-section" class="max-w-4xl mx-auto hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-base-blue">Token Analytics Dashboard</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h3 class="font-semibold mb-2">Total Tokens Created</h3>
+                        <p class="text-2xl font-bold">1,247</p>
+                        <p class="text-sm text-blue-700">+12% from last week</p>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h3 class="font-semibold mb-2">Total Liquidity</h3>
+                        <p class="text-2xl font-bold">$24.7M</p>
+                        <p class="text-sm text-blue-700">+8% from last week</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg p-6">
+                    <h3 class="font-semibold mb-4">Market Overview</h3>
+                    <div class="chart-container bg-gray-50 rounded p-4">
+                        <canvas id="price-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="gradient-bg text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                    <div class="w-8 h-8 bg-white rounded-md flex items-center justify-center">
+                        <span class="text-base-blue font-bold text-lg">B</span>
+                    </div>
+                    <span class="text-xl font-bold">BaseTrack</span>
+                </div>
+                <div class="text-sm text-gray-300">
+                    © 2024 BaseTrack. Built for the Base ecosystem.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // DOM Elements
-        const chatContainer = document.getElementById('chatContainer');
-        const userInput = document.getElementById('userInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const connectWalletBtn = document.getElementById('connectWalletBtn');
-        const sampleQueries = document.querySelectorAll('.sample-query');
-
-        // Mock wallet state
-        let walletConnected = false;
-        let currentWalletAddress = '';
-
-        // Connect Wallet Functionality
-        connectWalletBtn.addEventListener('click', async () => {
-            if (!walletConnected) {
-                // Simulate wallet connection
-                try {
-                    // In a real app, this would use Web3Modal/Ethers.js
-                    currentWalletAddress = '0x742d35Cc6634C0532925a3b8D4C9db96C0d5c8a1';
-                    walletConnected = true;
-                    
-                    // Update UI
-                    connectWalletBtn.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${currentWalletAddress.slice(0, 6)}...${currentWalletAddress.slice(-4)}`;
-                    connectWalletBtn.classList.remove('connect-button');
-                    connectWalletBtn.classList.add('bg-green-500', 'hover:bg-green-600');
-                    
-                    // Enable input
-                    userInput.disabled = false;
-                    sendBtn.disabled = false;
-                    
-                    // Show welcome message for connected wallet
-                    addMessage("Great! Your wallet is connected. What would you like to explore in the Base ecosystem?", 'ai');
-                } catch (error) {
-                    addMessage("Failed to connect wallet. Please try again.", 'ai');
-                }
-            }
-        });
-
-        // Send Message Functionality
-        sendBtn.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        // Sample Query Click Handler
-        sampleQueries.forEach(button => {
-            button.addEventListener('click', () => {
-                userInput.value = button.textContent;
-                sendMessage();
+        const connectWalletBtn = document.getElementById('connect-wallet');
+        const walletInfo = document.getElementById('wallet-info');
+        const connectPrompt = document.getElementById('connect-prompt');
+        const walletAddressEl = document.getElementById('wallet-address');
+        const createTokenBtn = document.getElementById('create-token-btn');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const tokenNameInput = document.getElementById('token-name');
+        const tokenSymbolInput = document.getElementById('token-symbol');
+        const totalSupplyInput = document.getElementById('total-supply');
+        
+        // Tab Navigation
+        document.getElementById('create-tab').addEventListener('click', () => showSection('create'));
+        document.getElementById('explore-tab').addEventListener('click', () => showSection('explore'));
+        document.getElementById('analytics-tab').addEventListener('click', () => showSection('analytics'));
+        
+        function showSection(section) {
+            document.getElementById('create-section').classList.toggle('hidden', section !== 'create');
+            document.getElementById('explore-section').classList.toggle('hidden', section !== 'explore');
+            document.getElementById('analytics-section').classList.toggle('hidden', section !== 'analytics');
+            
+            // Update active tab styling
+            document.querySelectorAll('button[id$="-tab"]').forEach(btn => {
+                btn.classList.remove('bg-blue-700');
+                btn.classList.add('hover:bg-blue-800');
             });
-        });
-
-        function sendMessage() {
-            const message = userInput.value.trim();
-            if (!message) return;
-
-            // Add user message
-            addMessage(message, 'user');
-            userInput.value = '';
-
-            // Show typing indicator
-            showTypingIndicator();
-
-            // Simulate AI response after delay
-            setTimeout(() => {
-                removeTypingIndicator();
-                generateAIResponse(message);
-            }, 1500);
+            document.getElementById(`${section}-tab`).classList.add('bg-blue-700');
+            document.getElementById(`${section}-tab`).classList.remove('hover:bg-blue-800');
         }
-
-        function addMessage(text, sender) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message-bubble mb-4';
+        
+        // Mock wallet connection
+        let connectedWallet = null;
+        
+        connectWalletBtn.addEventListener('click', async () => {
+            // In a real app, this would connect to MetaMask or WalletConnect
+            // For demo purposes, we'll simulate a wallet connection
+            const mockAddresses = [
+                '0x742d35Cc6634C0532925a3b8D4C9db9653E5F8A5',
+                '0x8901B7321672C79E3aA1aA8c4E8E7a5C4E8E7a5C',
+                '0x1234567890123456789012345678901234567890'
+            ];
             
-            if (sender === 'user') {
-                messageDiv.innerHTML = `
-                    <div class="flex items-start justify-end space-x-3">
-                        <div class="quest-card p-4 rounded-xl max-w-xs lg:max-w-md">
-                            <p class="text-base-100">${text}</p>
-                        </div>
-                        <div class="w-8 h-8 bg-base-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-user text-base-300 text-sm"></i>
-                        </div>
-                    </div>
-                `;
+            connectedWallet = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
+            walletAddressEl.textContent = `${connectedWallet.slice(0, 6)}...${connectedWallet.slice(-4)}`;
+            walletInfo.classList.remove('hidden');
+            connectPrompt.classList.add('hidden');
+            connectWalletBtn.textContent = 'Connected';
+            connectWalletBtn.disabled = true;
+            createTokenBtn.disabled = false;
+            analyzeBtn.disabled = false;
+            
+            // Load explore tokens
+            loadExploreTokens();
+        });
+        
+        // Input validation
+        function validateInputs() {
+            const name = tokenNameInput.value.trim();
+            const symbol = tokenSymbolInput.value.trim();
+            const supply = totalSupplyInput.value;
+            
+            return name && symbol && supply && parseInt(supply) > 0;
+        }
+        
+        tokenNameInput.addEventListener('input', () => {
+            if (connectedWallet) {
+                createTokenBtn.disabled = !validateInputs();
+            }
+        });
+        
+        tokenSymbolInput.addEventListener('input', () => {
+            if (connectedWallet) {
+                createTokenBtn.disabled = !validateInputs();
+            }
+        });
+        
+        totalSupplyInput.addEventListener('input', () => {
+            if (connectedWallet) {
+                createTokenBtn.disabled = !validateInputs();
+            }
+        });
+        
+        // AI Analysis
+        analyzeBtn.addEventListener('click', () => {
+            const name = tokenNameInput.value.trim();
+            const symbol = tokenSymbolInput.value.trim();
+            const supply = parseInt(totalSupplyInput.value);
+            
+            const aiAnalysis = analyzeToken(name, symbol, supply);
+            
+            const aiAnalysisEl = document.getElementById('ai-analysis');
+            const aiIcon = document.getElementById('ai-icon');
+            const aiTitle = document.getElementById('ai-title');
+            const aiMessage = document.getElementById('ai-message');
+            
+            if (aiAnalysis.isSafe) {
+                aiIcon.className = 'fas fa-check-circle w-5 h-5 text-green-500 mt-0.5 mr-2';
+                aiTitle.textContent = 'Token Looks Safe!';
+                aiTitle.className = 'font-semibold text-green-800';
             } else {
-                messageDiv.innerHTML = `
-                    <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-robot text-base-900 text-sm"></i>
-                        </div>
-                        <div class="quest-card p-4 rounded-xl max-w-xs lg:max-w-md">
-                            <p class="text-base-100">${text}</p>
-                        </div>
-                    </div>
-                `;
+                aiIcon.className = 'fas fa-exclamation-triangle w-5 h-5 text-red-500 mt-0.5 mr-2';
+                aiTitle.textContent = 'Potential Risks Detected';
+                aiTitle.className = 'font-semibold text-red-800';
             }
             
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            aiMessage.textContent = aiAnalysis.analysis;
+            aiAnalysisEl.classList.remove('hidden');
+        });
+        
+        function analyzeToken(name, symbol, supply) {
+            const suspiciousPatterns = ['scam', 'rug', 'ponzi', 'fake', 'test'];
+            const lowerName = name.toLowerCase();
+            const lowerSymbol = symbol.toLowerCase();
+            
+            if (suspiciousPatterns.some(pattern => lowerName.includes(pattern) || lowerSymbol.includes(pattern))) {
+                return {
+                    isSafe: false,
+                    analysis: 'Token name or symbol contains suspicious keywords that may indicate a scam.'
+                };
+            } else if (supply > 1000000000) {
+                return {
+                    isSafe: false,
+                    analysis: 'Extremely high total supply may indicate potential inflation or scam.'
+                };
+            } else if (supply < 1000) {
+                return {
+                    isSafe: false,
+                    analysis: 'Very low total supply may indicate a potential scam or test token.'
+                };
+            } else if (name.length < 3 || symbol.length < 2) {
+                return {
+                    isSafe: false,
+                    analysis: 'Token name or symbol is too short, which may indicate a scam.'
+                };
+            } else {
+                return {
+                    isSafe: true,
+                    analysis: 'Token appears to follow standard naming conventions and has reasonable parameters.'
+                };
+            }
         }
-
-        function showTypingIndicator() {
-            const typingDiv = document.createElement('div');
-            typingDiv.id = 'typingIndicator';
-            typingDiv.className = 'message-bubble mb-4';
-            typingDiv.innerHTML = `
-                <div class="flex items-start space-x-3">
-                    <div class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-robot text-base-900 text-sm"></i>
-                    </div>
-                    <div class="quest-card p-4 rounded-xl">
-                        <div class="flex space-x-1">
-                            <div class="typing-indicator"></div>
-                            <div class="typing-indicator"></div>
-                            <div class="typing-indicator"></div>
-                        </div>
-                    </div>
+        
+        // Create Token
+        createTokenBtn.addEventListener('click', () => {
+            if (!validateInputs()) return;
+            
+            const tokenData = {
+                name: tokenNameInput.value.trim(),
+                symbol: tokenSymbolInput.value.trim(),
+                supply: totalSupplyInput.value,
+                address: `0x${Math.random().toString(16).substr(2, 40)}`,
+                createdAt: new Date().toISOString(),
+                price: (Math.random() * 5 + 0.1).toFixed(4),
+                liquidity: (Math.random() * 100000 + 1000).toFixed(2),
+                holders: Math.floor(Math.random() * 1000 + 100)
+            };
+            
+            // Show success message
+            const tokenDetails = document.getElementById('token-details');
+            tokenDetails.innerHTML = `
+                <div>
+                    <p class="text-sm text-gray-500">Token Name</p>
+                    <p class="font-semibold">${tokenData.name}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Token Symbol</p>
+                    <p class="font-semibold">${tokenData.symbol}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Supply</p>
+                    <p class="font-semibold">${tokenData.supply}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Contract Address</p>
+                    <p class="font-mono text-xs break-all">${tokenData.address}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Created On</p>
+                    <p class="font-semibold">${new Date(tokenData.createdAt).toLocaleString()}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Current Price</p>
+                    <p class="font-semibold">$${tokenData.price}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Liquidity</p>
+                    <p class="font-semibold">$${tokenData.liquidity}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Holders</p>
+                    <p class="font-semibold">${tokenData.holders}</p>
                 </div>
             `;
-            chatContainer.appendChild(typingDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function removeTypingIndicator() {
-            const typingIndicator = document.getElementById('typingIndicator');
-            if (typingIndicator) {
-                typingIndicator.remove();
-            }
-        }
-
-        function generateAIResponse(userMessage) {
-            const message = userMessage.toLowerCase();
             
-            if (message.includes('quest') || message.includes('quest')) {
-                showQuestsResponse();
-            } else if (message.includes('wallet') || message.includes('eligibility') || message.includes('claim')) {
-                showEligibilityResponse();
-            } else if (message.includes('onchain summer')) {
-                showOnchainSummerResponse();
-            } else if (message.includes('trending') || message.includes('project')) {
-                showTrendingProjectsResponse();
-            } else if (message.includes('explain') || message.includes('what is')) {
-                showExplanationResponse();
-            } else {
-                addMessage("I'm here to help you navigate the Base ecosystem! Try asking about quests, airdrops, wallet eligibility, or Base projects. For example: 'Show me new quests' or 'Check if my wallet can claim anything'.", 'ai');
-            }
-        }
-
-        function showQuestsResponse() {
-            const quests = [
-                {
-                    title: "Galxe: Base Builders Quest",
-                    platform: "Galxe",
-                    reward: "500 GAL",
-                    status: "Active",
-                    link: "#"
-                },
-                {
-                    title: "Layer3: Base Ecosystem Explorer",
-                    platform: "Layer3",
-                    reward: "NFT Badge + Points",
-                    status: "Active",
-                    link: "#"
-                },
-                {
-                    title: "Onchain Summer: Base DeFi Challenge",
-                    platform: "Onchain Summer",
-                    reward: "Exclusive NFT",
-                    status: "Ending Soon",
-                    link: "#"
-                }
-            ];
-
-            let response = "Here are 3 new quests on Base:\n\n";
-            quests.forEach((quest, index) => {
-                response += `${index + 1}. **${quest.title}**\n`;
-                response += `   • Platform: ${quest.platform}\n`;
-                response += `   • Reward: ${quest.reward}\n`;
-                response += `   • Status: ${quest.status}\n\n`;
-            });
-            response += "Would you like me to check your eligibility for any of these?";
+            document.getElementById('token-success').classList.remove('hidden');
             
-            addMessage(response, 'ai');
-        }
-
-        function showEligibilityResponse() {
-            if (!walletConnected) {
-                addMessage("Please connect your wallet first to check eligibility!", 'ai');
-                return;
-            }
+            // Scroll to success message
+            document.getElementById('token-success').scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        // Load Explore Tokens
+        function loadExploreTokens() {
+            const tokenGrid = document.getElementById('token-grid');
+            tokenGrid.innerHTML = '';
             
-            const eligibility = [
-                "✅ **Base Builders Quest** - Eligible! You've completed 3/5 required tasks",
-                "🟡 **DeFi Explorer Badge** - Almost there! Complete 1 more swap on Base",
-                "❌ **NFT Collector Quest** - Not eligible yet. Mint 1 NFT on Base to qualify"
-            ];
-            
-            let response = `I've checked your wallet **${currentWalletAddress.slice(0, 8)}...${currentWalletAddress.slice(-6)}**:\n\n`;
-            response += eligibility.join('\n\n');
-            response += "\n\nWould you like detailed steps for any of these quests?";
-            
-            addMessage(response, 'ai');
-        }
-
-        function showOnchainSummerResponse() {
-            const response = `**Onchain Summer 2025** is Base's flagship seasonal event that runs from June to August 2025! 🌞\n\n` +
-                `• **What it is**: A 3-month celebration of onchain activity with exclusive quests, rewards, and community events\n` +
-                `• **How to participate**: Complete daily/weekly quests across DeFi, NFTs, and social activities\n` +
-                `• **Rewards**: Limited edition NFTs, token airdrops, and exclusive access to Base ecosystem events\n` +
-                `• **Current focus**: Building your onchain reputation through meaningful interactions\n\n` +
-                `Want me to show you the current Onchain Summer quests you can join?`;
-            
-            addMessage(response, 'ai');
-        }
-
-        function showTrendingProjectsResponse() {
-            const projects = [
-                { name: "Aerodrome Finance", category: "DEX/AMM", tvl: "$450M" },
-                { name: "BaseSwap", category: "DEX", tvl: "$120M" },
-                { name: "Morpho", category: "Lending", tvl: "$85M" },
-                { name: "Friend.tech", category: "Social", users: "250K+" }
-            ];
-            
-            let response = "Here are trending Base projects today:\n\n";
-            projects.forEach(project => {
-                response += `• **${project.name}** - ${project.category}\n`;
-                if (project.tvl) response += `  TVL: ${project.tvl}\n`;
-                if (project.users) response += `  Users: ${project.users}\n`;
-                response += "\n";
-            });
-            response += "Interested in learning more about any of these projects?";
-            
-            addMessage(response, 'ai');
-        }
-
-        function showExplanationResponse() {
-            const response = "I can explain various Base ecosystem concepts! Here are some popular topics:\n\n" +
-                "• **Base Network**: Coinbase's Layer 2 built on Ethereum using OP Stack\n" +
-                "• **OP Stack**: The open-source framework that powers Base and other L2s\n" +
-                "• **Gas Fees**: Much lower than Ethereum mainnet (typically $0.01-$0.10)\n" +
-                "• **Bridging**: Move assets from Ethereum to Base using official bridge\n" +
-                "• **DeFi on Base**: High-yield opportunities with lower transaction costs\n\n" +
-                "What specific topic would you like me to explain in detail?";
-            
-            addMessage(response, 'ai');
-        }
-    </script>
-</body>
-</html>
-
+            for (let i = 1; i <= 6; i++) {
+                const price = (Math.random() * 10 + 0.5).toFixed(2);
+                const liquidity = (Math.random() * 100000 + 1000).toFixed(0);
+                const holders = Math.floor(Math.random() * 1000 + 100);
+                const change = (Math.random() * 20 - 10).toFixed(1);
+                const isPositive = parseFloat(change) >= 0;
+                
+                const tokenCard = document.createEl
