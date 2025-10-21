@@ -1,261 +1,408 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BaseTrack — Never miss a reward on Base</title>
-  <meta name="description" content="BaseTrack — track Base quests, airdrops and rewards. Built for quick phone deployment." />  <!-- Tailwind CDN for quick styling (phone-friendly) -->  <script src="https://cdn.tailwindcss.com"></script>  <!-- Ethers (for MetaMask / wallet connect basics) -->  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>  <style>
-    /* small extra styles */
-    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
-    .pulse-icon { animation: pulse 2s infinite; }
-    @keyframes pulse { 0%{ transform: scale(1);} 50%{ transform: scale(1.06);} 100%{ transform: scale(1);} }
-  </style></head>
-<body class="bg-[#0b1220] text-white min-h-screen font-sans">
-  <div class="max-w-3xl mx-auto p-4">
-    <!-- Header -->
-    <header class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0052FF] to-[#00D4FF] flex items-center justify-center shadow-2xl">
-          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M3 12h18"/></svg>
-        </div>
-        <div>
-          <h1 class="text-xl font-semibold">BaseTrack</h1>
-          <p class="text-xs text-slate-300">Never miss a reward, drop, or quest on Base.</p>
-        </div>
-      </div><div class="flex items-center gap-3">
-    <button id="connectBtn" class="px-3 py-2 rounded-lg bg-white text-black text-sm">Connect Wallet</button>
-  </div>
-</header>
-
-<!-- Hero -->
-<section class="mb-6 glass p-4 rounded-2xl shadow-xl">
-  <div class="flex items-start gap-4">
-    <div class="flex-1">
-      <h2 class="text-2xl font-bold mb-1">Track active quests & airdrops on Base</h2>
-      <p class="text-slate-300 mb-3">See which rewards are live, whether you’re eligible, and get quick links to claim.</p>
-
-      <div class="flex gap-2 flex-wrap">
-        <button id="viewFeed" class="px-3 py-2 bg-[#0052FF] rounded-lg text-sm">View Active Quests</button>
-        <button id="joinWaitlist" class="px-3 py-2 border border-slate-700 rounded-lg text-sm">Join Waitlist</button>
-      </div>
-    </div>
-    <div class="w-28 text-center">
-      <div class="bg-white/5 p-3 rounded-xl">
-        <div class="text-xs text-slate-300">Tracked</div>
-        <div id="trackedCount" class="text-2xl font-bold mt-1">0</div>
-        <div class="text-xs text-slate-300">rewards</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Filters -->
-<div class="mb-4 flex gap-2 items-center">
-  <input id="search" type="search" placeholder="Search quests, projects, tokens..." class="flex-1 p-2 rounded-lg bg-white/5 placeholder:text-slate-400" />
-  <select id="sourceFilter" class="p-2 rounded-lg bg-white/5">
-    <option value="all">All sources</option>
-    <option value="galxe">Galxe</option>
-    <option value="layer3">Layer3</option>
-    <option value="onchain">Onchain Summer</option>
-  </select>
-</div>
-
-<!-- Feed -->
-<main id="feed" class="space-y-3 mb-8">
-  <!-- injected quest cards go here -->
-</main>
-
-<!-- Footer actions -->
-<footer class="py-4 border-t border-white/5 text-slate-300 text-sm">
-  <div class="flex flex-col sm:flex-row sm:justify-between gap-2">
-    <div>Made for Base · Mobile-first · Privacy-first</div>
-    <div class="flex gap-3">
-      <button id="refreshBtn" class="px-3 py-1 bg-white/5 rounded">Refresh</button>
-      <button id="exportBtn" class="px-3 py-1 bg-white/5 rounded">Export CSV</button>
-    </div>
-  </div>
-</footer>
-
-  </div>  <!-- Email modal (simple) -->  <div id="emailModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
-    <div class="bg-[#071024] rounded-xl p-4 w-full max-w-md">
-      <h3 class="font-semibold mb-2">Join BaseTrack waitlist</h3>
-      <p class="text-slate-400 text-sm mb-3">Enter your email to get updates when new quests are tracked.</p>
-      <input id="waitEmail" type="email" placeholder="you@domain.com" class="w-full p-2 rounded mb-3 bg-white/5" />
-      <div class="flex gap-2 justify-end">
-        <button id="closeEmail" class="px-3 py-2 rounded bg-white/5">Cancel</button>
-        <button id="saveEmail" class="px-3 py-2 rounded bg-[#0052FF]">Join</button>
-      </div>
-    </div>
-  </div>  <script>
-    // ----- Quick client-side "BaseTrack" prototype -----
-    // NOTE: This is a mobile-first, single-file prototype. To plug real APIs (Galxe/Layer3), replace fetchFakeQuests() with real API calls.
-
-    const sampleQuests = [
-      { id: 'q1', title: 'Galxe — Base Launch Quest', source: 'galxe', reward: 'NFT + $5', ends: '2025-11-05', url: '#', claimed: false },
-      { id: 'q2', title: 'Layer3 — Base Builders', source: 'layer3', reward: 'Token airdrop', ends: '2025-10-30', url: '#', claimed: false },
-      { id: 'q3', title: 'Onchain Summer — Base Trivia', source: 'onchain', reward: 'Mystery NFT', ends: '2025-12-01', url: '#', claimed: true },
-    ];
-
-    // Local state
-    let quests = [];
-    let provider = null;
-    let userAddress = null;
-
-    // Elements
-    const feed = document.getElementById('feed');
-    const trackedCount = document.getElementById('trackedCount');
-    const connectBtn = document.getElementById('connectBtn');
-    const viewFeed = document.getElementById('viewFeed');
-    const joinWaitlist = document.getElementById('joinWaitlist');
-    const emailModal = document.getElementById('emailModal');
-    const closeEmail = document.getElementById('closeEmail');
-    const saveEmail = document.getElementById('saveEmail');
-    const waitEmail = document.getElementById('waitEmail');
-    const search = document.getElementById('search');
-    const sourceFilter = document.getElementById('sourceFilter');
-
-    // Basic helpers
-    function timeLeft(endDate) {
-      const now = new Date();
-      const end = new Date(endDate);
-      const diff = end - now;
-      if (diff <= 0) return 'ended';
-      const days = Math.floor(diff / (1000*60*60*24));
-      return days + 'd left';
-    }
-
-    function renderQuests(list) {
-      feed.innerHTML = '';
-      list.forEach(q => {
-        const card = document.createElement('div');
-        card.className = 'p-3 rounded-xl bg-white/3 flex items-start justify-between';
-        card.innerHTML = `
-          <div class="flex-1">
-            <div class="flex items-center gap-2">
-              <div class="w-10 h-10 rounded bg-white/5 flex items-center justify-center text-xs">${q.source}</div>
-              <div>
-                <div class="font-semibold">${q.title}</div>
-                <div class="text-xs text-slate-300">Reward: ${q.reward} · ${timeLeft(q.ends)}</div>
-              </div>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BaseTrack AI - Your Onchain Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        base: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                            600: '#475569',
+                            500: '#64748b',
+                            400: '#94a3b8',
+                            300: '#cbd5e1',
+                            200: '#e2e8f0',
+                            100: '#f8fafc'
+                        },
+                        primary: {
+                            500: '#00f5a8',
+                            600: '#00d992'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+        .message-bubble {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .typing-indicator {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background-color: #00f5a8;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-indicator:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .connect-button {
+            background: linear-gradient(135deg, #00f5a8 0%, #00d992 100%);
+            transition: all 0.3s ease;
+        }
+        .connect-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 245, 168, 0.3);
+        }
+        .quest-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            transition: all 0.3s ease;
+        }
+        .quest-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 245, 168, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot text-base-900 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">BaseTrack AI</h1>
+                    <p class="text-base-400 text-sm">Your onchain assistant for Base ecosystem</p>
+                </div>
             </div>
-          </div>
-          <div class="ml-3 text-right flex flex-col gap-2 items-end">
-            <a href="${q.url}" target="_blank" class="text-xs px-3 py-1 border rounded">Open</a>
-            <button class="text-xs px-3 py-1 rounded ${q.claimed ? 'opacity-60' : 'bg-[#00D4FF] text-black'}" data-id="${q.id}">${q.claimed ? 'Claimed' : 'Check'}</button>
-          </div>
-        `;
-        feed.appendChild(card);
-      });
-      trackedCount.textContent = list.length;
+            <button id="connectWalletBtn" class="connect-button px-6 py-2 rounded-lg font-semibold text-base-900 hover:shadow-lg transition-all duration-300">
+                <i class="fas fa-wallet mr-2"></i>Connect Wallet
+            </button>
+        </header>
 
-      // attach check buttons
-      document.querySelectorAll('[data-id]').forEach(btn => {
-        btn.onclick = async (e) => {
-          const id = e.currentTarget.dataset.id;
-          const quest = quests.find(x => x.id === id);
-          if (!quest) return;
-          // If connected, show eligibility
-          if (userAddress) {
-            const eligible = mockEligibility(userAddress, quest.id);
-            alert(eligible ? `You are likely eligible for ${quest.title}` : `You are not eligible for ${quest.title}`);
-          } else {
-            alert('Connect your wallet to check eligibility (MetaMask on mobile browsers or WalletConnect).');
-          }
+        <!-- Chat Interface -->
+        <div class="bg-base-800 rounded-2xl p-6 mb-6 h-96 overflow-y-auto" id="chatContainer">
+            <!-- Welcome Message -->
+            <div class="message-bubble mb-4">
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-robot text-base-900 text-sm"></i>
+                    </div>
+                    <div class="quest-card p-4 rounded-xl">
+                        <p class="text-base-100">Hello! I'm BaseTrack AI, your onchain assistant for the Base ecosystem. 💡</p>
+                        <p class="text-base-300 mt-2">I can help you with:</p>
+                        <ul class="text-base-300 mt-2 space-y-1 text-sm">
+                            <li>• Discover new quests and airdrops</li>
+                            <li>• Check wallet eligibility</li>
+                            <li>• Explain Base projects and tokens</li>
+                            <li>• Track trending opportunities</li>
+                        </ul>
+                        <p class="text-base-300 mt-3">Try asking: "Show me 3 new quests on Base" or "Check if my wallet can claim anything"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="flex space-x-4">
+            <input 
+                type="text" 
+                id="userInput" 
+                placeholder="Ask about Base quests, airdrops, or projects..." 
+                class="flex-1 bg-base-700 border border-base-600 rounded-xl px-4 py-3 text-base-100 placeholder-base-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                disabled
+            >
+            <button 
+                id="sendBtn" 
+                class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-3 rounded-xl font-semibold text-base-900 hover:shadow-lg transition-all duration-300 disabled:opacity-50"
+                disabled
+            >
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+
+        <!-- Sample Queries -->
+        <div class="mt-6">
+            <p class="text-base-400 text-sm mb-3">Try these examples:</p>
+            <div class="flex flex-wrap gap-2">
+                <button class="sample-query bg-base-700 hover:bg-base-600 px-3 py-2 rounded-lg text-sm text-base-200 transition-colors">Show me 3 new quests</button>
+                <button class="sample-query bg-base-700 hover:bg-base-600 px-3 py-2 rounded-lg text-sm text-base-200 transition-colors">Check wallet eligibility</button>
+                <button class="sample-query bg-base-700 hover:bg-base-600 px-3 py-2 rounded-lg text-sm text-base-200 transition-colors">Explain Onchain Summer</button>
+                <button class="sample-query bg-base-700 hover:bg-base-600 px-3 py-2 rounded-lg text-sm text-base-200 transition-colors">Trending Base projects</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const sampleQueries = document.querySelectorAll('.sample-query');
+
+        // Mock wallet state
+        let walletConnected = false;
+        let currentWalletAddress = '';
+
+        // Connect Wallet Functionality
+        connectWalletBtn.addEventListener('click', async () => {
+            if (!walletConnected) {
+                // Simulate wallet connection
+                try {
+                    // In a real app, this would use Web3Modal/Ethers.js
+                    currentWalletAddress = '0x742d35Cc6634C0532925a3b8D4C9db96C0d5c8a1';
+                    walletConnected = true;
+                    
+                    // Update UI
+                    connectWalletBtn.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${currentWalletAddress.slice(0, 6)}...${currentWalletAddress.slice(-4)}`;
+                    connectWalletBtn.classList.remove('connect-button');
+                    connectWalletBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                    
+                    // Enable input
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    
+                    // Show welcome message for connected wallet
+                    addMessage("Great! Your wallet is connected. What would you like to explore in the Base ecosystem?", 'ai');
+                } catch (error) {
+                    addMessage("Failed to connect wallet. Please try again.", 'ai');
+                }
+            }
+        });
+
+        // Send Message Functionality
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Sample Query Click Handler
+        sampleQueries.forEach(button => {
+            button.addEventListener('click', () => {
+                userInput.value = button.textContent;
+                sendMessage();
+            });
+        });
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, 'user');
+            userInput.value = '';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Simulate AI response after delay
+            setTimeout(() => {
+                removeTypingIndicator();
+                generateAIResponse(message);
+            }, 1500);
         }
-      });
-    }
 
-    function mockEligibility(address, questId) {
-      // quick mock: check last hex char of address
-      try {
-        const last = address.slice(-1);
-        const n = parseInt(last, 16);
-        return (n % 2) === (questId.length % 2);
-      } catch(e) { return false; }
-    }
-
-    // Fake fetch to simulate API calls (replace this with real API integration)
-    async function fetchFakeQuests() {
-      // Simulate network delay
-      await new Promise(r => setTimeout(r, 300));
-      // In production: call Galxe / Layer3 endpoints and normalize results to this shape
-      quests = sampleQuests;
-      applyFiltersAndRender();
-    }
-
-    function applyFiltersAndRender() {
-      const q = search.value.toLowerCase();
-      const src = sourceFilter.value;
-      let filtered = quests.filter(x => (
-        (src === 'all' || x.source === src) &&
-        (x.title.toLowerCase().includes(q) || x.reward.toLowerCase().includes(q))
-      ));
-      renderQuests(filtered);
-    }
-
-    // Wallet connect (MetaMask basic). On mobile, users can use MetaMask in-app browser or WalletConnect (future).
-    async function connectWallet() {
-      if (window.ethereum) {
-        try {
-          provider = new ethers.providers.Web3Provider(window.ethereum);
-          await provider.send('eth_requestAccounts', []);
-          const signer = provider.getSigner();
-          userAddress = await signer.getAddress();
-          connectBtn.textContent = userAddress.slice(0,6) + '...' + userAddress.slice(-4);
-          connectBtn.classList.add('bg-white/5');
-          // update UI (mark some quests as eligible for demo)
-          applyFiltersAndRender();
-        } catch (e) {
-          alert('Connection failed: ' + e.message);
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-bubble mb-4';
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start justify-end space-x-3">
+                        <div class="quest-card p-4 rounded-xl max-w-xs lg:max-w-md">
+                            <p class="text-base-100">${text}</p>
+                        </div>
+                        <div class="w-8 h-8 bg-base-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user text-base-300 text-sm"></i>
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-base-900 text-sm"></i>
+                        </div>
+                        <div class="quest-card p-4 rounded-xl max-w-xs lg:max-w-md">
+                            <p class="text-base-100">${text}</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-      } else {
-        alert('MetaMask not detected. On mobile, open this in MetaMask browser or use WalletConnect (coming soon).');
-      }
-    }
 
-    // Export CSV simple function
-    function exportCSV() {
-      const rows = [['id','title','source','reward','ends','claimed']];
-      quests.forEach(q => rows.push([q.id, q.title, q.source, q.reward, q.ends, q.claimed]));
-      const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
-      const url = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'basetrack-quests.csv';
-      a.click();
-    }
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'message-bubble mb-4';
+            typingDiv.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-robot text-base-900 text-sm"></i>
+                    </div>
+                    <div class="quest-card p-4 rounded-xl">
+                        <div class="flex space-x-1">
+                            <div class="typing-indicator"></div>
+                            <div class="typing-indicator"></div>
+                            <div class="typing-indicator"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
 
-    // Waitlist (localStorage simple)
-    function saveWaitlistEmail(email) {
-      if (!email || !email.includes('@')) { alert('Enter a valid email'); return; }
-      const list = JSON.parse(localStorage.getItem('bt_waitlist') || '[]');
-      if (!list.includes(email)) list.push(email);
-      localStorage.setItem('bt_waitlist', JSON.stringify(list));
-      alert('Thanks — you are on the waitlist!');
-      emailModal.classList.add('hidden');
-    }
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
 
-    // --- event wiring ---
-    connectBtn.onclick = connectWallet;
-    viewFeed.onclick = () => { window.scrollTo({ top: document.body.scrollHeight/4, behavior: 'smooth' }); };
-    joinWaitlist.onclick = () => { emailModal.classList.remove('hidden'); };
-    closeEmail.onclick = () => { emailModal.classList.add('hidden'); };
-    saveEmail.onclick = () => { saveWaitlistEmail(waitEmail.value.trim()); };
-    refreshBtn.onclick = fetchFakeQuests;
-    exportBtn.onclick = exportCSV;
-    search.oninput = applyFiltersAndRender;
-    sourceFilter.onchange = applyFiltersAndRender;
+        function generateAIResponse(userMessage) {
+            const message = userMessage.toLowerCase();
+            
+            if (message.includes('quest') || message.includes('quest')) {
+                showQuestsResponse();
+            } else if (message.includes('wallet') || message.includes('eligibility') || message.includes('claim')) {
+                showEligibilityResponse();
+            } else if (message.includes('onchain summer')) {
+                showOnchainSummerResponse();
+            } else if (message.includes('trending') || message.includes('project')) {
+                showTrendingProjectsResponse();
+            } else if (message.includes('explain') || message.includes('what is')) {
+                showExplanationResponse();
+            } else {
+                addMessage("I'm here to help you navigate the Base ecosystem! Try asking about quests, airdrops, wallet eligibility, or Base projects. For example: 'Show me new quests' or 'Check if my wallet can claim anything'.", 'ai');
+            }
+        }
 
-    // load
-    (async function(){
-      await fetchFakeQuests();
-    })();
+        function showQuestsResponse() {
+            const quests = [
+                {
+                    title: "Galxe: Base Builders Quest",
+                    platform: "Galxe",
+                    reward: "500 GAL",
+                    status: "Active",
+                    link: "#"
+                },
+                {
+                    title: "Layer3: Base Ecosystem Explorer",
+                    platform: "Layer3",
+                    reward: "NFT Badge + Points",
+                    status: "Active",
+                    link: "#"
+                },
+                {
+                    title: "Onchain Summer: Base DeFi Challenge",
+                    platform: "Onchain Summer",
+                    reward: "Exclusive NFT",
+                    status: "Ending Soon",
+                    link: "#"
+                }
+            ];
 
-    // --- Notes for next steps (for developer):
-    // 1) Replace fetchFakeQuests() with real API calls to Galxe/Layer3.
-    // 2) Normalize results to {id, title, source, reward, ends, url, claimed} shape.
-    // 3) Add server-side cron (or on-demand) to update the feed and send push notifications.
-    // 4) Integrate WalletConnect for mobile wallets where window.ethereum is not available.
-  </script></body>
+            let response = "Here are 3 new quests on Base:\n\n";
+            quests.forEach((quest, index) => {
+                response += `${index + 1}. **${quest.title}**\n`;
+                response += `   • Platform: ${quest.platform}\n`;
+                response += `   • Reward: ${quest.reward}\n`;
+                response += `   • Status: ${quest.status}\n\n`;
+            });
+            response += "Would you like me to check your eligibility for any of these?";
+            
+            addMessage(response, 'ai');
+        }
+
+        function showEligibilityResponse() {
+            if (!walletConnected) {
+                addMessage("Please connect your wallet first to check eligibility!", 'ai');
+                return;
+            }
+            
+            const eligibility = [
+                "✅ **Base Builders Quest** - Eligible! You've completed 3/5 required tasks",
+                "🟡 **DeFi Explorer Badge** - Almost there! Complete 1 more swap on Base",
+                "❌ **NFT Collector Quest** - Not eligible yet. Mint 1 NFT on Base to qualify"
+            ];
+            
+            let response = `I've checked your wallet **${currentWalletAddress.slice(0, 8)}...${currentWalletAddress.slice(-6)}**:\n\n`;
+            response += eligibility.join('\n\n');
+            response += "\n\nWould you like detailed steps for any of these quests?";
+            
+            addMessage(response, 'ai');
+        }
+
+        function showOnchainSummerResponse() {
+            const response = `**Onchain Summer 2025** is Base's flagship seasonal event that runs from June to August 2025! 🌞\n\n` +
+                `• **What it is**: A 3-month celebration of onchain activity with exclusive quests, rewards, and community events\n` +
+                `• **How to participate**: Complete daily/weekly quests across DeFi, NFTs, and social activities\n` +
+                `• **Rewards**: Limited edition NFTs, token airdrops, and exclusive access to Base ecosystem events\n` +
+                `• **Current focus**: Building your onchain reputation through meaningful interactions\n\n` +
+                `Want me to show you the current Onchain Summer quests you can join?`;
+            
+            addMessage(response, 'ai');
+        }
+
+        function showTrendingProjectsResponse() {
+            const projects = [
+                { name: "Aerodrome Finance", category: "DEX/AMM", tvl: "$450M" },
+                { name: "BaseSwap", category: "DEX", tvl: "$120M" },
+                { name: "Morpho", category: "Lending", tvl: "$85M" },
+                { name: "Friend.tech", category: "Social", users: "250K+" }
+            ];
+            
+            let response = "Here are trending Base projects today:\n\n";
+            projects.forEach(project => {
+                response += `• **${project.name}** - ${project.category}\n`;
+                if (project.tvl) response += `  TVL: ${project.tvl}\n`;
+                if (project.users) response += `  Users: ${project.users}\n`;
+                response += "\n";
+            });
+            response += "Interested in learning more about any of these projects?";
+            
+            addMessage(response, 'ai');
+        }
+
+        function showExplanationResponse() {
+            const response = "I can explain various Base ecosystem concepts! Here are some popular topics:\n\n" +
+                "• **Base Network**: Coinbase's Layer 2 built on Ethereum using OP Stack\n" +
+                "• **OP Stack**: The open-source framework that powers Base and other L2s\n" +
+                "• **Gas Fees**: Much lower than Ethereum mainnet (typically $0.01-$0.10)\n" +
+                "• **Bridging**: Move assets from Ethereum to Base using official bridge\n" +
+                "• **DeFi on Base**: High-yield opportunities with lower transaction costs\n\n" +
+                "What specific topic would you like me to explain in detail?";
+            
+            addMessage(response, 'ai');
+        }
+    </script>
+</body>
 </html>
+
