@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BaseTrack - Create Tokens on Base</title>
+    <title>BaseTrack - Twitter Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -11,6 +11,10 @@
                 extend: {
                     colors: {
                         'base-blue': '#0052FF',
+                        'twitter-blue': '#1DA1F2',
+                        'twitter-bg': '#000000',
+                        'twitter-sidebar': '#000000',
+                        'twitter-card': '#151515'
                     }
                 }
             }
@@ -18,412 +22,222 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .token-card {
-            transition: all 0.3s ease;
+        .tweet-card {
+            transition: background-color 0.2s ease;
         }
-        .token-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        .tweet-card:hover {
+            background-color: #1a1a1a;
         }
-        .chart-container {
-            height: 300px;
+        .wallet-badge {
+            background: linear-gradient(45deg, #0052FF, #00c6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .gradient-bg {
-            background: linear-gradient(135deg, #0052FF 0%, #0033A0 100%);
+        .token-badge {
+            background: linear-gradient(45deg, #7C3AED, #d946ef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .gas-badge {
+            background: linear-gradient(45deg, #10B981, #34D399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 82, 255, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 82, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 82, 255, 0); }
         }
     </style>
 </head>
-<body class="bg-white min-h-screen">
-    <!-- Header -->
-    <header class="gradient-bg text-white shadow-lg">
-        <div class="container mx-auto px-4 py-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <div class="w-10 h-10 bg-white rounded-md flex items-center justify-center">
-                        <span class="text-base-blue font-bold text-xl">B</span>
-                    </div>
-                    <h1 class="text-2xl font-bold">BaseTrack</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <nav class="hidden md:flex space-x-6">
-                        <button id="create-tab" class="px-4 py-2 rounded-md bg-blue-700 transition">Create Token</button>
-                        <button id="explore-tab" class="px-4 py-2 rounded-md hover:bg-blue-800 transition">Explore Tokens</button>
-                        <button id="analytics-tab" class="px-4 py-2 rounded-md hover:bg-blue-800 transition">Analytics</button>
-                    </nav>
-                    <button id="connect-wallet" class="px-4 py-2 bg-white text-base-blue rounded-md hover:bg-gray-100 transition font-semibold">
-                        Connect Wallet
+<body class="bg-black text-white min-h-screen">
+    <div class="flex max-w-7xl mx-auto">
+        <!-- Sidebar -->
+        <div class="w-64 fixed h-full p-4 border-r border-gray-800">
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold text-white mb-6">BaseTrack</h1>
+                
+                <!-- Wallet Connection -->
+                <div id="wallet-section" class="mb-6">
+                    <button id="connect-wallet" class="w-full bg-base-blue hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-full transition mb-4">
+                        <i class="fas fa-wallet mr-2"></i>Connect Wallet
                     </button>
+                    
+                    <div id="wallet-info" class="hidden">
+                        <div class="bg-gray-900 rounded-lg p-3 mb-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-gray-400 text-sm">Wallet Address</span>
+                                <i class="fas fa-copy text-gray-500 cursor-pointer hover:text-white" id="copy-address"></i>
+                            </div>
+                            <p id="wallet-address" class="font-mono text-sm break-all text-white"></p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div class="bg-gray-900 rounded-lg p-2">
+                                <div class="text-gray-400 text-xs">ETH Balance</div>
+                                <div id="eth-balance" class="font-semibold">0.00 ETH</div>
+                            </div>
+                            <div class="bg-gray-900 rounded-lg p-2">
+                                <div class="text-gray-400 text-xs">USDC Balance</div>
+                                <div id="usdc-balance" class="font-semibold">0.00 USDC</div>
+                            </div>
+                        </div>
+                        
+                        <button id="fund-wallet" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2 px-4 rounded-full transition text-sm">
+                            <i class="fas fa-gas-pump mr-1"></i>Fund for Gas
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="space-y-2">
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-full hover:bg-gray-900 transition">
+                        <i class="fas fa-home text-xl"></i>
+                        <span class="text-xl">Home</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-full hover:bg-gray-900 transition">
+                        <i class="fas fa-hashtag text-xl"></i>
+                        <span class="text-xl">Explore</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-full hover:bg-gray-900 transition">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="text-xl">Notifications</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-full hover:bg-gray-900 transition">
+                        <i class="fas fa-envelope text-xl"></i>
+                        <span class="text-xl">Messages</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-full hover:bg-gray-900 transition">
+                        <i class="fas fa-coins text-xl"></i>
+                        <span class="text-xl">My Tokens</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <!-- Create Token Button -->
+            <button id="create-token-btn" disabled class="w-full bg-base-blue hover:bg-blue-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-full transition mb-4">
+                <i class="fas fa-plus mr-2"></i>Create Token
+            </button>
+            
+            <!-- User Profile -->
+            <div class="flex items-center space-x-3 p-3 rounded-full hover:bg-gray-900 transition cursor-pointer">
+                <div class="w-10 h-10 bg-gradient-to-r from-base-blue to-purple-600 rounded-full flex items-center justify-center">
+                    <span class="font-bold">U</span>
+                </div>
+                <div>
+                    <div class="font-bold">BaseTrack User</div>
+                    <div class="text-gray-500">@basetrack_user</div>
                 </div>
             </div>
         </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Create Token Section -->
-        <div id="create-section" class="max-w-4xl mx-auto">
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 class="text-2xl font-bold mb-6 text-base-blue">Create Your Token on Base</h2>
-                
-                <div id="wallet-info" class="mb-6 p-4 bg-blue-50 rounded-lg hidden">
-                    <p class="text-sm text-blue-800">
-                        Connected as: <span id="wallet-address" class="font-mono"></span>
-                    </p>
-                </div>
-                
-                <div id="connect-prompt" class="mb-6 p-4 bg-yellow-50 rounded-lg">
-                    <p class="text-sm text-yellow-800">
-                        Please connect your wallet to create a token.
-                    </p>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Token Name *</label>
-                        <input
-                            type="text"
-                            id="token-name"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-base-blue"
-                            placeholder="Enter token name"
-                        />
+        <!-- Main Content -->
+        <div class="flex-1 ml-64">
+            <!-- Header -->
+            <div class="sticky top-0 bg-black bg-opacity-80 backdrop-blur-md border-b border-gray-800 p-4">
+                <h2 class="text-xl font-bold">Home</h2>
+            </div>
+
+            <!-- Create Token Tweet -->
+            <div class="p-4 border-b border-gray-800">
+                <div class="flex space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-base-blue to-purple-600 rounded-full flex items-center justify-center">
+                        <span class="font-bold text-white">B</span>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Token Symbol *</label>
-                        <input
-                            type="text"
-                            id="token-symbol"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-base-blue"
-                            placeholder="Enter token symbol (e.g., BASE)"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Total Supply *</label>
-                        <input
-                            type="number"
-                            id="total-supply"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-base-blue"
-                            placeholder="Enter total supply"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                        <select
-                            id="payment-method"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-base-blue"
-                        >
-                            <option value="ETH">ETH</option>
-                            <option value="USDC">USDC</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="mb-6">
-                    <button
-                        id="analyze-btn"
-                        disabled
-                        class="px-4 py-2 bg-base-blue text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition mr-4"
-                    >
-                        AI Safety Analysis
-                    </button>
-                    
-                    <div id="ai-analysis" class="mt-4 p-4 rounded-md hidden">
-                        <div class="flex items-start">
-                            <i id="ai-icon" class="fas fa-check-circle w-5 h-5 text-green-500 mt-0.5 mr-2"></i>
-                            <div>
-                                <h3 id="ai-title" class="font-semibold text-green-800"></h3>
-                                <p id="ai-message" class="mt-1 text-sm text-gray-700"></p>
+                    <div class="flex-1">
+                        <div id="token-form" class="hidden">
+                            <textarea 
+                                id="tweet-content" 
+                                placeholder="What's happening with your token?" 
+                                class="w-full bg-transparent text-white text-xl placeholder-gray-500 focus:outline-none resize-none mb-4"
+                                rows="3"
+                            ></textarea>
+                            
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div>
+                                    <label class="block text-gray-400 text-sm mb-1">Token Name</label>
+                                    <input 
+                                        type="text" 
+                                        id="token-name" 
+                                        placeholder="BaseCoin"
+                                        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-base-blue"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-gray-400 text-sm mb-1">Symbol</label>
+                                    <input 
+                                        type="text" 
+                                        id="token-symbol" 
+                                        placeholder="BASE"
+                                        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-base-blue"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-gray-400 text-sm mb-1">Total Supply</label>
+                                    <input 
+                                        type="number" 
+                                        id="total-supply" 
+                                        placeholder="1000000"
+                                        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-base-blue"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-gray-400 text-sm mb-1">Payment Method</label>
+                                    <select 
+                                        id="payment-method"
+                                        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-base-blue"
+                                    >
+                                        <option value="ETH">ETH</option>
+                                        <option value="USDC">USDC</option>
+                                    </select>
+                                </div>
                             </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <div class="text-sm text-gray-400">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Gas fee: ~0.002 ETH
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="cancel-token" class="px-4 py-2 text-gray-400 hover:text-white transition">Cancel</button>
+                                    <button id="post-token" disabled class="px-4 py-2 bg-base-blue hover:bg-blue-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-full transition">
+                                        Create Token
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="create-prompt" class="text-gray-400">
+                            <button id="show-token-form" disabled class="text-base-blue hover:underline disabled:text-gray-600 disabled:no-underline">
+                                <i class="fas fa-coins mr-1"></i>Create a new token on Base
+                            </button>
                         </div>
                     </div>
                 </div>
-                
-                <div class="flex justify-end">
-                    <button
-                        id="create-token-btn"
-                        disabled
-                        class="px-6 py-3 bg-base-blue text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                        Create Token
-                    </button>
-                </div>
             </div>
-            
-            <div id="token-success" class="bg-white rounded-xl shadow-lg p-6 hidden">
-                <h3 class="text-xl font-bold mb-4 text-base-blue">Token Created Successfully!</h3>
-                <div id="token-details" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Token details will be populated here -->
-                </div>
+
+            <!-- Token Feed -->
+            <div id="token-feed" class="space-y-4 p-4">
+                <!-- Token tweets will appear here -->
             </div>
         </div>
 
-        <!-- Explore Tokens Section -->
-        <div id="explore-section" class="max-w-4xl mx-auto hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h2 class="text-2xl font-bold mb-6 text-base-blue">Explore Popular Tokens</h2>
-                
-                <div id="token-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Token cards will be populated here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Analytics Section -->
-        <div id="analytics-section" class="max-w-4xl mx-auto hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h2 class="text-2xl font-bold mb-6 text-base-blue">Token Analytics Dashboard</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-blue-50 rounded-lg p-4">
-                        <h3 class="font-semibold mb-2">Total Tokens Created</h3>
-                        <p class="text-2xl font-bold">1,247</p>
-                        <p class="text-sm text-blue-700">+12% from last week</p>
+        <!-- Right Sidebar -->
+        <div class="w-80 p-4 hidden lg:block">
+            <div class="bg-gray-900 rounded-xl p-4 mb-4">
+                <h3 class="font-bold text-lg mb-3">Trending on Base</h3>
+                <div class="space-y-3">
+                    <div class="hover:bg-gray-800 p-2 rounded cursor-pointer">
+                        <div class="text-gray-400 text-sm">Trending</div>
+                        <div class="font-bold">#BaseEcosystem</div>
+                        <div class="text-gray-400 text-sm">2.1K posts</div>
                     </div>
-                    <div class="bg-blue-50 rounded-lg p-4">
-                        <h3 class="font-semibold mb-2">Total Liquidity</h3>
-                        <p class="text-2xl font-bold">$24.7M</p>
-                        <p class="text-sm text-blue-700">+8% from last week</p>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-lg p-6">
-                    <h3 class="font-semibold mb-4">Market Overview</h3>
-                    <div class="chart-container bg-gray-50 rounded p-4">
-                        <canvas id="price-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="gradient-bg text-white py-8 mt-12">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="flex items-center space-x-2 mb-4 md:mb-0">
-                    <div class="w-8 h-8 bg-white rounded-md flex items-center justify-center">
-                        <span class="text-base-blue font-bold text-lg">B</span>
-                    </div>
-                    <span class="text-xl font-bold">BaseTrack</span>
-                </div>
-                <div class="text-sm text-gray-300">
-                    © 2024 BaseTrack. Built for the Base ecosystem.
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // DOM Elements
-        const connectWalletBtn = document.getElementById('connect-wallet');
-        const walletInfo = document.getElementById('wallet-info');
-        const connectPrompt = document.getElementById('connect-prompt');
-        const walletAddressEl = document.getElementById('wallet-address');
-        const createTokenBtn = document.getElementById('create-token-btn');
-        const analyzeBtn = document.getElementById('analyze-btn');
-        const tokenNameInput = document.getElementById('token-name');
-        const tokenSymbolInput = document.getElementById('token-symbol');
-        const totalSupplyInput = document.getElementById('total-supply');
-        
-        // Tab Navigation
-        document.getElementById('create-tab').addEventListener('click', () => showSection('create'));
-        document.getElementById('explore-tab').addEventListener('click', () => showSection('explore'));
-        document.getElementById('analytics-tab').addEventListener('click', () => showSection('analytics'));
-        
-        function showSection(section) {
-            document.getElementById('create-section').classList.toggle('hidden', section !== 'create');
-            document.getElementById('explore-section').classList.toggle('hidden', section !== 'explore');
-            document.getElementById('analytics-section').classList.toggle('hidden', section !== 'analytics');
-            
-            // Update active tab styling
-            document.querySelectorAll('button[id$="-tab"]').forEach(btn => {
-                btn.classList.remove('bg-blue-700');
-                btn.classList.add('hover:bg-blue-800');
-            });
-            document.getElementById(`${section}-tab`).classList.add('bg-blue-700');
-            document.getElementById(`${section}-tab`).classList.remove('hover:bg-blue-800');
-        }
-        
-        // Mock wallet connection
-        let connectedWallet = null;
-        
-        connectWalletBtn.addEventListener('click', async () => {
-            // In a real app, this would connect to MetaMask or WalletConnect
-            // For demo purposes, we'll simulate a wallet connection
-            const mockAddresses = [
-                '0x742d35Cc6634C0532925a3b8D4C9db9653E5F8A5',
-                '0x8901B7321672C79E3aA1aA8c4E8E7a5C4E8E7a5C',
-                '0x1234567890123456789012345678901234567890'
-            ];
-            
-            connectedWallet = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
-            walletAddressEl.textContent = `${connectedWallet.slice(0, 6)}...${connectedWallet.slice(-4)}`;
-            walletInfo.classList.remove('hidden');
-            connectPrompt.classList.add('hidden');
-            connectWalletBtn.textContent = 'Connected';
-            connectWalletBtn.disabled = true;
-            createTokenBtn.disabled = false;
-            analyzeBtn.disabled = false;
-            
-            // Load explore tokens
-            loadExploreTokens();
-        });
-        
-        // Input validation
-        function validateInputs() {
-            const name = tokenNameInput.value.trim();
-            const symbol = tokenSymbolInput.value.trim();
-            const supply = totalSupplyInput.value;
-            
-            return name && symbol && supply && parseInt(supply) > 0;
-        }
-        
-        tokenNameInput.addEventListener('input', () => {
-            if (connectedWallet) {
-                createTokenBtn.disabled = !validateInputs();
-            }
-        });
-        
-        tokenSymbolInput.addEventListener('input', () => {
-            if (connectedWallet) {
-                createTokenBtn.disabled = !validateInputs();
-            }
-        });
-        
-        totalSupplyInput.addEventListener('input', () => {
-            if (connectedWallet) {
-                createTokenBtn.disabled = !validateInputs();
-            }
-        });
-        
-        // AI Analysis
-        analyzeBtn.addEventListener('click', () => {
-            const name = tokenNameInput.value.trim();
-            const symbol = tokenSymbolInput.value.trim();
-            const supply = parseInt(totalSupplyInput.value);
-            
-            const aiAnalysis = analyzeToken(name, symbol, supply);
-            
-            const aiAnalysisEl = document.getElementById('ai-analysis');
-            const aiIcon = document.getElementById('ai-icon');
-            const aiTitle = document.getElementById('ai-title');
-            const aiMessage = document.getElementById('ai-message');
-            
-            if (aiAnalysis.isSafe) {
-                aiIcon.className = 'fas fa-check-circle w-5 h-5 text-green-500 mt-0.5 mr-2';
-                aiTitle.textContent = 'Token Looks Safe!';
-                aiTitle.className = 'font-semibold text-green-800';
-            } else {
-                aiIcon.className = 'fas fa-exclamation-triangle w-5 h-5 text-red-500 mt-0.5 mr-2';
-                aiTitle.textContent = 'Potential Risks Detected';
-                aiTitle.className = 'font-semibold text-red-800';
-            }
-            
-            aiMessage.textContent = aiAnalysis.analysis;
-            aiAnalysisEl.classList.remove('hidden');
-        });
-        
-        function analyzeToken(name, symbol, supply) {
-            const suspiciousPatterns = ['scam', 'rug', 'ponzi', 'fake', 'test'];
-            const lowerName = name.toLowerCase();
-            const lowerSymbol = symbol.toLowerCase();
-            
-            if (suspiciousPatterns.some(pattern => lowerName.includes(pattern) || lowerSymbol.includes(pattern))) {
-                return {
-                    isSafe: false,
-                    analysis: 'Token name or symbol contains suspicious keywords that may indicate a scam.'
-                };
-            } else if (supply > 1000000000) {
-                return {
-                    isSafe: false,
-                    analysis: 'Extremely high total supply may indicate potential inflation or scam.'
-                };
-            } else if (supply < 1000) {
-                return {
-                    isSafe: false,
-                    analysis: 'Very low total supply may indicate a potential scam or test token.'
-                };
-            } else if (name.length < 3 || symbol.length < 2) {
-                return {
-                    isSafe: false,
-                    analysis: 'Token name or symbol is too short, which may indicate a scam.'
-                };
-            } else {
-                return {
-                    isSafe: true,
-                    analysis: 'Token appears to follow standard naming conventions and has reasonable parameters.'
-                };
-            }
-        }
-        
-        // Create Token
-        createTokenBtn.addEventListener('click', () => {
-            if (!validateInputs()) return;
-            
-            const tokenData = {
-                name: tokenNameInput.value.trim(),
-                symbol: tokenSymbolInput.value.trim(),
-                supply: totalSupplyInput.value,
-                address: `0x${Math.random().toString(16).substr(2, 40)}`,
-                createdAt: new Date().toISOString(),
-                price: (Math.random() * 5 + 0.1).toFixed(4),
-                liquidity: (Math.random() * 100000 + 1000).toFixed(2),
-                holders: Math.floor(Math.random() * 1000 + 100)
-            };
-            
-            // Show success message
-            const tokenDetails = document.getElementById('token-details');
-            tokenDetails.innerHTML = `
-                <div>
-                    <p class="text-sm text-gray-500">Token Name</p>
-                    <p class="font-semibold">${tokenData.name}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Token Symbol</p>
-                    <p class="font-semibold">${tokenData.symbol}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Total Supply</p>
-                    <p class="font-semibold">${tokenData.supply}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Contract Address</p>
-                    <p class="font-mono text-xs break-all">${tokenData.address}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Created On</p>
-                    <p class="font-semibold">${new Date(tokenData.createdAt).toLocaleString()}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Current Price</p>
-                    <p class="font-semibold">$${tokenData.price}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Liquidity</p>
-                    <p class="font-semibold">$${tokenData.liquidity}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Holders</p>
-                    <p class="font-semibold">${tokenData.holders}</p>
-                </div>
-            `;
-            
-            document.getElementById('token-success').classList.remove('hidden');
-            
-            // Scroll to success message
-            document.getElementById('token-success').scrollIntoView({ behavior: 'smooth' });
-        });
-        
-        // Load Explore Tokens
-        function loadExploreTokens() {
-            const tokenGrid = document.getElementById('token-grid');
-            tokenGrid.innerHTML = '';
-            
-            for (let i = 1; i <= 6; i++) {
-                const price = (Math.random() * 10 + 0.5).toFixed(2);
-                const liquidity = (Math.random() * 100000 + 1000).toFixed(0);
-                const holders = Math.floor(Math.random() * 1000 + 100);
-                const change = (Math.random() * 20 - 10).toFixed(1);
-                const isPositive = parseFloat(change) >= 0;
-                
-                const tokenCard = document.createEl
+                    <div class="hover:bg-gray-800 p-2 rounded cursor-pointer">
+                        <div class="text-gray-400 text-sm">Token</div>
+                        <div class="font-bold token-badge">#BaseMeme</div>
